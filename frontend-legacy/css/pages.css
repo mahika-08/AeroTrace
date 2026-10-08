@@ -1,0 +1,82 @@
+/* frontend/css/pages.css */
+
+/* Event Investigation Page */
+.investigation-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+}
+
+@media (max-width: 1199.98px) {
+    .investigation-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.map-container {
+    height: 400px;
+    width: 100%;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1; /* Leaflet needs proper z-index management */
+}
+
+.chart-container {
+    height: 300px;
+    width: 100%;
+    margin-bottom: 2rem;
+}
+
+.candidate-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.candidate-item {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+}
+
+.candidate-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.candidate-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.candidate-score {
+    font-size: 1.25rem;
+    font-weight: 300;
+    color: var(--accent-primary);
+}
+
+.candidate-details {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Map legend override */
+.map-legend {
+    background: white;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+.map-legend i {
+    width: 12px;
+    height: 12px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+    margin-top: 2px;
+}

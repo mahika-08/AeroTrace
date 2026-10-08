@@ -1,0 +1,42 @@
+/* frontend/css/responsive.css */
+
+@media (max-width: 991.98px) {
+    .app-sidebar {
+        position: fixed;
+        left: calc(var(--sidebar-width) * -1);
+        top: 0;
+        bottom: 0;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .app-sidebar.open {
+        left: 0;
+    }
+    
+    .sidebar-toggle {
+        display: block;
+    }
+    
+    .app-header {
+        padding: 0 1rem;
+    }
+    
+    .app-content {
+        padding: 1rem;
+    }
+    
+    .metric-group {
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .metric-value {
+        font-size: 2rem;
+    }
+    
+    .data-panel {
+        padding: 1rem;
+    }
+}

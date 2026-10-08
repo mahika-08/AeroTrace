@@ -1,0 +1,98 @@
+/* frontend/css/style.css */
+:root {
+    /* Colors */
+    --bg-primary: #f8f9fa; /* Very light neutral */
+    --bg-surface: #ffffff; /* White */
+    
+    --text-primary: #212529; /* Dark charcoal */
+    --text-secondary: #6c757d; /* Muted slate gray */
+    
+    --border-color: #dee2e6; /* Subtle cool gray */
+    --border-divider: #e9ecef; /* Very subtle divider */
+    
+    --accent-primary: #0f766e; /* Professional teal */
+    --accent-primary-hover: #0d9488;
+    
+    /* Semantic Colors */
+    --semantic-success: #059669; /* Green: positive/strong evidence */
+    --semantic-warning: #d97706; /* Amber: warning/uncertainty */
+    --semantic-danger: #dc2626;  /* Red: critical/anomaly */
+    --semantic-info: #0284c7;    /* Blue: primary state */
+    
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    
+    /* Layout */
+    --sidebar-width: 260px;
+    --header-height: 64px;
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+a {
+    color: var(--accent-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Editorial Typography */
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.page-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-divider);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+
+/* Utilities */
+.text-muted {
+    color: var(--text-secondary);
+}
+
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.justify-content-between { justify-content: space-between; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 1rem; }
+.gap-4 { gap: 1.5rem; }
+
+.mt-4 { margin-top: 1.5rem; }
+.mb-4 { margin-bottom: 1.5rem; }
