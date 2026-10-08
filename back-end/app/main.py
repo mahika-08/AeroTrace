@@ -1,11 +1,15 @@
-
 from contextlib import asynccontextmanager
-
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+import json
+from datetime import datetime, timezone
 
+from sqlalchemy import func
+
+from app.database import AttributionRun
+from app.services.attribution import rank_facilities
 from app.database import (
     Facility,
     Measurement,
@@ -40,6 +44,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5500",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -286,3 +291,182 @@ def get_event(event_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Event not found")
 
     return event_to_dict(event, db)
+
+
+
+def build_attribution(event_id: int, db: Session) -> dict:
+    event = db.get(PollutionEvent, event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    sensor = db.get(Sensor, event.sensor_id)
+    pollutant = db.get(Pollutant, event.pollutant_id)
+
+    if sensor is None or pollutant is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Event is missing its sensor or pollutant record",
+        )
+
+    facility_rows = db.scalars(
+        select(Facility).order_by(Facility.id)
+    ).all()
+
+    facilities = [
+        {
+            "id": f.id,
+            "name": f.name,
+            "latitude": f.latitude,
+            "longitude": f.longitude,
+            "emission_categories": [
+                item.strip()
+                for item in f.emission_categories.split(",")
+                if item.strip()
+            ],
+        }
+        for f in facility_rows
+    ]
+
+    weather = db.scalars(
+        select(WeatherObservation)
+        .where(WeatherObservation.sensor_id == sensor.id)
+        .order_by(WeatherObservation.observed_at.desc())
+    ).first()
+
+    weather_data = None
+    if weather is not None:
+        weather_data = {
+            "wind_speed_mps": weather.wind_speed_mps,
+            "wind_direction_deg": weather.wind_direction_deg,
+        }
+
+    event_data = {
+        "latitude": sensor.latitude,
+        "longitude": sensor.longitude,
+        "pollutant": pollutant.name,
+    }
+
+    candidates = rank_facilities(event_data, facilities, weather_data)
+
+    measurement_count = db.scalar(
+        select(func.count(Measurement.id)).where(
+            Measurement.sensor_id == sensor.id,
+            Measurement.pollutant_id == pollutant.id,
+        )
+    ) or 0
+
+    active_sensor_count = db.scalar(
+        select(func.count(Sensor.id)).where(Sensor.active.is_(True))
+    ) or 0
+
+    # Conservative heuristic: reliability is separate from candidate score.
+    confidence = 25
+    if weather_data and weather_data["wind_direction_deg"] is not None:
+        confidence += 15
+    if measurement_count >= 3:
+        confidence += 10
+    if active_sensor_count >= 3:
+        confidence += 15
+    if len(candidates) >= 2:
+        gap = candidates[0]["score"] - candidates[1]["score"]
+        confidence += min(15, max(0, int(gap / 2)))
+
+    confidence = min(confidence, 65) if active_sensor_count < 3 else min(confidence, 85)
+
+    uncertainty = [
+        "Attribution scores are heuristic rankings, not probabilities or proof of causation.",
+        "Demo readings and facility information are synthetic.",
+    ]
+
+    if active_sensor_count < 3:
+        uncertainty.append(
+            "Limited active sensor coverage prevents reliable spatial triangulation."
+        )
+    if weather_data is None or weather_data["wind_direction_deg"] is None:
+        uncertainty.append("Wind direction is unavailable for this analysis.")
+    if not candidates:
+        uncertainty.append("No candidate facilities were available to rank.")
+
+    if candidates:
+        summary = (
+            f"{candidates[0]['facility_name']} is the highest-ranked candidate "
+            "based on the available heuristic evidence; this is not confirmation "
+            "of the pollution source."
+        )
+    else:
+        summary = "No candidate facilities were available for this event."
+
+    return {
+        "event_id": event.id,
+        "confidence": confidence,
+        "summary": summary,
+        "uncertainty": uncertainty,
+        "candidates": candidates,
+    }
+
+
+def latest_attribution(event_id: int, db: Session) -> dict:
+    event = db.get(PollutionEvent, event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    run = db.scalars(
+        select(AttributionRun)
+        .where(AttributionRun.event_id == event_id)
+        .order_by(AttributionRun.analyzed_at.desc(), AttributionRun.id.desc())
+    ).first()
+
+    if run is None:
+        raise HTTPException(
+            status_code=404,
+            detail="This event has not been analyzed yet",
+        )
+
+    return {
+        "event_id": run.event_id,
+        "analysis_id": run.id,
+        "confidence": run.confidence,
+        "summary": run.summary,
+        "uncertainty": json.loads(run.uncertainty_json),
+        "candidates": json.loads(run.candidates_json),
+        "analyzed_at": to_utc_iso(run.analyzed_at),
+    }
+
+
+@app.post("/api/v1/events/{event_id}/analyze")
+def analyze_event(event_id: int, db: Session = Depends(get_db)):
+    result = build_attribution(event_id, db)
+    analyzed_at = datetime.now(timezone.utc)
+
+    run = AttributionRun(
+        event_id=event_id,
+        analyzed_at=analyzed_at,
+        confidence=result["confidence"],
+        summary=result["summary"],
+        uncertainty_json=json.dumps(result["uncertainty"]),
+        candidates_json=json.dumps(result["candidates"]),
+    )
+    db.add(run)
+
+    event = db.get(PollutionEvent, event_id)
+    event.status = "ANALYZED"
+    db.commit()
+    db.refresh(run)
+
+    return {
+        **result,
+        "analysis_id": run.id,
+        "status": "ANALYZED",
+        "analyzed_at": to_utc_iso(run.analyzed_at),
+        "candidate_count": len(result["candidates"]),
+        "top_candidate_id": (
+            result["candidates"][0]["facility_id"]
+            if result["candidates"]
+            else None
+        ),
+    }
+
+
+@app.get("/api/v1/events/{event_id}/attribution")
+def get_attribution(event_id: int, db: Session = Depends(get_db)):
+    return latest_attribution(event_id, db)

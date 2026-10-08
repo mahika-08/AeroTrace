@@ -1,7 +1,7 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
-
+from sqlalchemy import Text
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -109,6 +109,20 @@ class PollutionEvent(Base):
     peak_value: Mapped[float] = mapped_column(Float, nullable=False)
     baseline_value: Mapped[float] = mapped_column(Float, nullable=False)
 
+class AttributionRun(Base):
+    __tablename__ = "attribution_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("pollution_events.id"), nullable=False, index=True
+    )
+    analyzed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    confidence: Mapped[int] = mapped_column(Integer, nullable=False)
+    summary: Mapped[str] = mapped_column(String(500), nullable=False)
+    uncertainty_json: Mapped[str] = mapped_column(Text, nullable=False)
+    candidates_json: Mapped[str] = mapped_column(Text, nullable=False)
 
 def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
