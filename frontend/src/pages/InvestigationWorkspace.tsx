@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { ArrowLeft, Activity, Wind, ServerCrash } from 'lucide-react';
+import { weatherApi, type ApiWeather } from '../api/weather';
+import { measurementsApi, type ApiMeasurement } from '../api/measurements';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import ConcentrationChart from '../components/ConcentrationChart';
 import AeroTraceMap from '../components/map/AeroTraceMap';
@@ -25,16 +27,36 @@ export default function InvestigationWorkspace() {
     return <div className="p-8">Event not found.</div>;
   }
 
-  // Generate fake time series data for the selected event
-  const chartData = event ? Array.from({ length: 24 }).map((_, i) => {
-    const time = new Date(new Date(event.timestamp).getTime() - (23 - i) * 3600000).toISOString();
-    let value = parseInt(event.baseline, 10);
-    if (i > 18 && i < 22) {
-      value = parseInt(event.concentration, 10) * (i === 20 ? 1 : 0.6);
+  const [weather, setWeather] = useState<ApiWeather | null>(null);
+  const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
+
+  useEffect(() => {
+    if (event) {
+      Promise.all([
+        weatherApi.getWeatherBySensor(event.sensorId),
+        measurementsApi.getMeasurementsBySensor(event.sensorId)
+      ]).then(([w, m]) => {
+        setWeather(w || null);
+        setMeasurements(m);
+      });
     }
-    value += Math.random() * 5;
-    return { time, value };
-  }) : [];
+  }, [event]);
+
+  // Generate chart data from measurements if available, else fallback
+  const chartData = measurements.length > 0 
+    ? [...measurements].reverse().map(m => ({ time: m.timestamp, value: m.concentration }))
+    : (event ? Array.from({ length: 24 }).map((_, i) => {
+        const time = new Date(new Date(event.timestamp).getTime() - (23 - i) * 3600000).toISOString();
+        let value = parseInt(event.baseline, 10);
+        if (i > 18 && i < 22) {
+          value = parseInt(event.concentration, 10) * (i === 20 ? 1 : 0.6);
+        }
+        value += Math.random() * 5;
+        return { time, value };
+      }) : []);
+
+  // Format wind to match map expectations if weather exists
+  const realWind = weather ? { direction: weather.wind_direction_deg, speed: weather.wind_speed_mps } : mockWind;
 
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-brand-bg text-brand-ink">
@@ -91,8 +113,10 @@ export default function InvestigationWorkspace() {
               <Wind size={14} /> Meteorology
             </h3>
             <div className="p-4 bg-brand-soft/30 rounded border border-brand-soft/50 text-sm space-y-2">
-              <div className="flex justify-between"><span className="text-brand-ink/60">Wind Direction</span><span className="font-medium">270° (W)</span></div>
-              <div className="flex justify-between"><span className="text-brand-ink/60">Wind Speed</span><span className="font-medium">12 km/h</span></div>
+              <div className="flex justify-between"><span className="text-brand-ink/60">Wind Direction</span><span className="font-medium">{weather ? `${weather.wind_direction_deg}°` : '270° (W)'}</span></div>
+              <div className="flex justify-between"><span className="text-brand-ink/60">Wind Speed</span><span className="font-medium">{weather ? `${weather.wind_speed_mps} m/s` : '12 km/h'}</span></div>
+              <div className="flex justify-between"><span className="text-brand-ink/60">Temperature</span><span className="font-medium">{weather ? `${weather.temperature_c}°C` : 'N/A'}</span></div>
+              <div className="flex justify-between"><span className="text-brand-ink/60">Humidity</span><span className="font-medium">{weather ? `${weather.humidity_percent}%` : 'N/A'}</span></div>
             </div>
           </section>
         </div>
@@ -108,7 +132,7 @@ export default function InvestigationWorkspace() {
           center={normalizeCoordinates(event.coordinates)}
           zoom={13}
           trajectory={mockTrajectory}
-          wind={mockWind}
+          wind={realWind}
         />
         
         {/* Floating Panel on Map (e.g. Chart or timeline) */}

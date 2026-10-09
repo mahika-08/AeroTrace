@@ -1,11 +1,42 @@
-const MOCK_SENSORS = [
-  { id: "SEN-101", name: "North-West Array", location: "Zone A", pollutant: "Multigas", status: "Online", lastSeen: new Date().toISOString(), coordinates: [34.0520, -118.2430] as [number, number] },
-  { id: "SEN-102", name: "River Monitor", location: "Zone B", pollutant: "SO2", status: "Online", lastSeen: new Date().toISOString(), coordinates: [34.0620, -118.2530] as [number, number] }
-];
+import { fetchApi } from './client';
+import type { Sensor as StoreSensor } from '../store/useAppStore';
+
+interface ApiSensor {
+  id: number;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  active: boolean;
+  last_seen_at: string;
+}
+
+interface SensorsResponse {
+  items: ApiSensor[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+function normalizeSensor(s: ApiSensor): StoreSensor {
+  return {
+    id: `SEN-${s.id}`,
+    name: s.name,
+    location: `${s.latitude?.toFixed(4) || '0'}, ${s.longitude?.toFixed(4) || '0'}`,
+    pollutant: "Multigas", // Backend sensor doesn't specify pollutant per sensor directly here
+    status: s.active ? "Online" : "Offline",
+    lastSeen: s.last_seen_at,
+    coordinates: (s.longitude != null && s.latitude != null) ? [s.longitude, s.latitude] : [0, 0],
+  };
+}
 
 export const sensorsApi = {
-  getSensors: async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return MOCK_SENSORS;
+  getSensors: async (): Promise<StoreSensor[]> => {
+    try {
+      const data = await fetchApi<SensorsResponse>('/api/v1/sensors?limit=50');
+      return data.items.map(normalizeSensor);
+    } catch (error) {
+      console.warn('Failed to fetch real sensors. Backend might be down.');
+      throw error;
+    }
   }
 };

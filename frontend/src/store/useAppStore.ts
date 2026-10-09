@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { eventsApi } from '../api/events';
 import { facilitiesApi } from '../api/facilities';
 import { sensorsApi } from '../api/sensors';
+import { dashboardApi } from '../api/dashboard';
 
 export interface Event {
   id: string;
@@ -96,20 +97,21 @@ export const useAppStore = create<AppState>((set) => ({
   initializeData: async () => {
     set({ isLoading: true, error: null });
     try {
-      const [events, facilities, sensors] = await Promise.all([
+      const [events, facilities, sensors, dashboard] = await Promise.all([
         eventsApi.getEvents(),
         facilitiesApi.getFacilities(),
-        sensorsApi.getSensors()
+        sensorsApi.getSensors(),
+        dashboardApi.getDashboard().catch(() => null)
       ]);
 
       set({
         events,
         facilities,
         sensors,
-        activeSensors: sensors.length,
-        monitoredFacilities: facilities.length,
-        activeEvents: events.length,
-        eventsUnderInvestigation: events.filter(e => e.status === 'Investigating').length,
+        activeSensors: dashboard?.sensors_online ?? sensors.length,
+        monitoredFacilities: dashboard?.facilities_tracked ?? facilities.length,
+        activeEvents: dashboard?.total_events ?? events.length,
+        eventsUnderInvestigation: dashboard?.open_events ?? events.filter(e => e.status === 'Investigating').length,
         selectedEventId: events.length > 0 ? events[0].id : null,
         isLoading: false
       });
