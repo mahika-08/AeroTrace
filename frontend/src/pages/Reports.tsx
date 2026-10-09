@@ -1,11 +1,18 @@
 import { FileText, Download } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
 
 export default function Reports() {
-  const dummyReports = [
-    { id: 'REP-2026-10-08-01', title: 'Source Attribution Analysis', event: 'EVT-001', date: '2026-10-08T14:30:00Z', status: 'Finalized' },
-    { id: 'REP-2026-10-07-04', title: 'Meteorological Baseline', event: 'N/A', date: '2026-10-07T09:00:00Z', status: 'Auto-Generated' },
-    { id: 'REP-2026-10-05-02', title: 'Source Attribution Analysis', event: 'EVT-042', date: '2026-10-05T16:45:00Z', status: 'Pending Review' },
-  ];
+  const { events } = useAppStore();
+
+  const reports = events
+    .filter(e => e.status === 'Analyzed')
+    .map(e => ({
+      id: `REP-${e.id}`,
+      title: 'Source Attribution Analysis',
+      event: e.id,
+      date: e.timestamp,
+      status: 'Finalized'
+    }));
 
   return (
     <div className="pt-32 px-8 md:px-24 pb-24 max-w-7xl mx-auto min-h-screen">
@@ -27,7 +34,7 @@ export default function Reports() {
           <div className="col-span-1 text-right">Action</div>
         </div>
 
-        {dummyReports.map(report => (
+        {reports.length > 0 ? reports.map(report => (
           <div key={report.id} className="grid grid-cols-12 gap-4 text-sm text-left py-6 px-4 bg-white border border-brand-soft hover:border-brand-moss transition-all items-center rounded-lg shadow-sm">
             <div className="col-span-3 font-mono text-brand-ink">{report.id}</div>
             <div className="col-span-4 flex items-center gap-3">
@@ -37,12 +44,14 @@ export default function Reports() {
             <div className="col-span-2 text-brand-ink/70">{report.event}</div>
             <div className="col-span-2 font-mono text-brand-ink/60">{new Date(report.date).toLocaleDateString()}</div>
             <div className="col-span-1 flex justify-end">
-              <button className="p-2 text-brand-moss hover:bg-brand-soft rounded transition-colors" title="Download Report">
+              <button className="p-2 text-brand-moss hover:bg-brand-soft rounded transition-colors" title="Download Report" onClick={() => alert('Download not implemented in prototype')}>
                 <Download size={18} />
               </button>
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="py-12 text-center text-brand-ink/50 italic">No reports generated yet. Analyze an event to generate a report.</div>
+        )}
       </div>
     </div>
   );

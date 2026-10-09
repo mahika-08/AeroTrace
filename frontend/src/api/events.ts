@@ -62,5 +62,13 @@ export const eventsApi = {
       console.warn(`Failed to fetch event ${id}.`);
       throw error;
     }
+  },
+  analyzeEvent: async (id: string): Promise<any> => {
+    const numericId = id.replace('EVT-', '');
+    return fetchApi(`/api/v1/events/${numericId}/analyze`, { method: 'POST' });
+  },
+  getAttribution: async (id: string): Promise<any> => {
+    const numericId = id.replace('EVT-', '');
+    return fetchApi(`/api/v1/events/${numericId}/attribution`);
   }
 };

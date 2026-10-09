@@ -10,11 +10,9 @@ export function normalizeCoordinates(coords: any): LngLatArray {
   // If it's already an array
   if (Array.isArray(coords)) {
     if (coords.length >= 2) {
-      // Typically backends that return arrays return [lat, lng].
-      // The current frontend code does `<Marker longitude={event.coordinates[1]} latitude={event.coordinates[0]}>`
-      // So the backend (or mock) currently returns [lat, lng].
-      // We normalize to MapLibre's [lng, lat].
-      return [coords[1], coords[0]];
+      // The current frontend code actually sets [lng, lat] in normalizers
+      // MapLibre expects [lng, lat].
+      return [coords[0], coords[1]];
     }
     return [0, 0];
   }

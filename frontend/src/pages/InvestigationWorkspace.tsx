@@ -4,6 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { ArrowLeft, Activity, Wind, ServerCrash } from 'lucide-react';
 import { weatherApi, type ApiWeather } from '../api/weather';
 import { measurementsApi, type ApiMeasurement } from '../api/measurements';
+import { eventsApi } from '../api/events';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import ConcentrationChart from '../components/ConcentrationChart';
 import AeroTraceMap from '../components/map/AeroTraceMap';
@@ -29,18 +30,38 @@ export default function InvestigationWorkspace() {
 
   const [weather, setWeather] = useState<ApiWeather | null>(null);
   const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
+  const [attribution, setAttribution] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (event) {
       Promise.all([
-        weatherApi.getWeatherBySensor(event.sensorId),
-        measurementsApi.getMeasurementsBySensor(event.sensorId)
-      ]).then(([w, m]) => {
+        weatherApi.getWeatherBySensor(event.sensorId).catch(() => null),
+        measurementsApi.getMeasurementsBySensor(event.sensorId).catch(() => []),
+        event.status === 'Analyzed' ? eventsApi.getAttribution(event.id).catch(() => null) : Promise.resolve(null)
+      ]).then(([w, m, attr]) => {
         setWeather(w || null);
         setMeasurements(m);
+        setAttribution(attr);
       });
     }
   }, [event]);
+
+  const handleAnalyze = async () => {
+    if (!event) return;
+    setIsAnalyzing(true);
+    setAnalyzeError(null);
+    try {
+      const res = await eventsApi.analyzeEvent(event.id);
+      setAttribution(res);
+      await initializeData();
+    } catch (err: any) {
+      setAnalyzeError(err.message || 'Failed to analyze event');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // Generate chart data from measurements if available, else fallback
   const chartData = measurements.length > 0 
@@ -92,19 +113,41 @@ export default function InvestigationWorkspace() {
             <h3 className="text-xs uppercase tracking-widest text-brand-moss mb-4 flex items-center gap-2">
               <ServerCrash size={14} /> Source Candidates
             </h3>
-            <div className="space-y-3">
-              {facilities.map((fac, idx) => (
-                <div key={fac.id} className="p-3 border border-brand-soft/80 rounded hover:border-brand-data/50 hover:bg-brand-soft/20 cursor-pointer transition-colors flex justify-between items-center">
-                  <div>
-                    <div className="text-sm font-medium">{fac.name}</div>
-                    <div className="text-xs text-brand-ink/60">{fac.location}</div>
+            {analyzeError && <div className="text-red-500 text-sm mb-2">{analyzeError}</div>}
+            {!attribution && event.status !== 'Analyzed' ? (
+              <button 
+                onClick={handleAnalyze} 
+                disabled={isAnalyzing}
+                className="w-full py-2 bg-brand-moss text-white rounded hover:bg-brand-forest transition-colors disabled:opacity-50"
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze Event'}
+              </button>
+            ) : attribution?.candidates?.length ? (
+              <div className="space-y-3">
+                {attribution.candidates.map((cand: any, idx: number) => (
+                  <div key={cand.facility_id} className="p-3 border border-brand-soft/80 rounded hover:border-brand-data/50 hover:bg-brand-soft/20 cursor-pointer transition-colors flex justify-between items-center">
+                    <div>
+                      <div className="text-sm font-medium">{cand.facility_name}</div>
+                      <div className="text-xs text-brand-ink/60">Rank {idx + 1}</div>
+                    </div>
+                    <div className={`font-mono text-lg ${idx === 0 ? 'text-brand-data' : 'text-brand-ink/50'}`}>
+                      {cand.score}
+                    </div>
                   </div>
-                  <div className={`font-mono text-lg ${idx === 0 ? 'text-brand-data' : 'text-brand-ink/50'}`}>
-                    {idx === 0 ? '86' : '41'}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-brand-ink/60">No candidates found.</div>
+            )}
+            
+            {attribution?.summary && (
+              <div className="mt-4 p-3 bg-brand-soft/30 rounded border border-brand-soft/50 text-sm">
+                <p className="font-medium text-brand-ink mb-2">{attribution.summary}</p>
+                {attribution.uncertainty?.map((note: string, idx: number) => (
+                  <p key={idx} className="text-brand-ink/70 text-xs mt-1">• {note}</p>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Meteorology */}
