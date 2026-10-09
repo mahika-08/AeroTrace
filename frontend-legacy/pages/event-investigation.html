@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investigation - AeroTrace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/pages.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="brand-logo">
+                    <i class="bi bi-wind"></i> AeroTrace
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="../index.html" class="nav-item"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+                <a href="events.html" class="nav-item"><i class="bi bi-activity"></i> Events</a>
+                <a href="event-investigation.html" class="nav-item active"><i class="bi bi-search"></i> Investigation</a>
+                <a href="facilities.html" class="nav-item"><i class="bi bi-buildings"></i> Facilities</a>
+                <a href="sensors.html" class="nav-item"><i class="bi bi-broadcast"></i> Sensors</a>
+                <a href="reports.html" class="nav-item"><i class="bi bi-file-earmark-text"></i> Reports</a>
+                <a href="settings.html" class="nav-item"><i class="bi bi-gear"></i> Settings</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <header class="app-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+                    <h1 class="header-title" id="headerTitle">Event Investigation</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btnReport" style="display: none;"><i class="bi bi-file-earmark-pdf"></i> Generate Report</button>
+                </div>
+            </header>
+
+            <div class="app-content" id="mainContent">
+                
+                <div id="invLoading">
+                    <div class="skeleton-text title"></div>
+                    <div class="skeleton-block mb-4"></div>
+                </div>
+
+                <div id="invEmpty" class="state-message" style="display: none;">
+                    <i class="bi bi-search"></i>
+                    <div>No event selected. Please select an event from the Events page.</div>
+                    <a href="events.html" class="btn btn-primary mt-4">View Events</a>
+                </div>
+
+                <div id="invError" class="state-message" style="display: none;">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <div>Unable to load investigation data.</div>
+                </div>
+
+                <div id="invData" style="display: none;">
+                    
+                    <!-- Top Overview -->
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-3" style="border-bottom: 1px solid var(--border-divider);">
+                        <div>
+                            <div class="page-title" id="evtId">-</div>
+                            <div class="text-muted"><i class="bi bi-geo-alt"></i> <span id="evtLoc">-</span> &nbsp;|&nbsp; <i class="bi bi-clock"></i> <span id="evtTime">-</span></div>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-1" id="evtStatus">-</div>
+                            <div id="evtSeverity">-</div>
+                        </div>
+                    </div>
+
+                    <div class="investigation-grid">
+                        
+                        <!-- Left Column: Spatial & Data -->
+                        <div class="inv-main">
+                            <section class="data-section">
+                                <h2 class="section-title">Spatial Context</h2>
+                                <div id="map" class="map-container"></div>
+                                <div class="text-muted" style="font-size: 0.75rem;">Simplified trajectory estimate based on available wind and event data. Not a regulatory-grade dispersion model.</div>
+                            </section>
+
+                            <section class="data-section">
+                                <h2 class="section-title">Concentration Evidence</h2>
+                                <div class="chart-container">
+                                    <canvas id="concentrationChart"></canvas>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- Right Column: Attribution & Weather -->
+                        <div class="inv-side">
+                            <section class="data-section">
+                                <h2 class="section-title">Source Attribution</h2>
+                                <div id="attributionContainer">
+                                    <!-- Candidates injected here -->
+                                </div>
+                                <div class="mt-4 pt-3" style="border-top: 1px solid var(--border-divider);">
+                                    <h3 style="font-size: 0.875rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Overall Confidence</h3>
+                                    <div id="overallConfidence" style="font-weight: 600; margin-bottom: 1rem;">-</div>
+                                    
+                                    <h3 style="font-size: 0.875rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Uncertainty & Limitations</h3>
+                                    <div id="uncertaintyNotes" style="font-size: 0.875rem; line-height: 1.5;">-</div>
+                                </div>
+                            </section>
+
+                            <section class="data-section">
+                                <h2 class="section-title">Weather Conditions</h2>
+                                <div class="data-panel" style="padding: 1rem;">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted" style="font-size: 0.875rem;">Wind</span>
+                                        <strong id="weatherWind">-</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted" style="font-size: 0.875rem;">Temperature</span>
+                                        <strong id="weatherTemp">-</strong>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--border-color);" id="weatherDesc">-</div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Vendor Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/dev-adapter.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/pages/event-investigation.js"></script>
+</body>
+</html>

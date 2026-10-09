@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: #F4F1E8;
+  --color-brand-ink: #17231D;
+  --color-brand-forest: #12372A;
+  --color-brand-moss: #6F967D;
+  --color-brand-data: #2E8B68;
+  --color-brand-earth: #B47B45;
+  --color-brand-danger: #D45B4C;
+  --color-brand-soft: #DCE5DC;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-brand-bg);
+    color: var(--color-brand-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    overflow-x: hidden;
+  }
+}
+
+/* Base resets and utilities */
+* {
+  box-sizing: border-box;
+}
+
+/* Atmospheric animated background */
+.atmospheric-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(212, 91, 76, 0.03), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(46, 139, 104, 0.03), transparent 25%);
+  background-color: var(--color-brand-bg);
+  background-size: 200% 200%;
+  animation: breathe 15s ease-in-out infinite alternate;
+}
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+@keyframes breathe {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.huge-typography {
+  font-size: clamp(3rem, 8vw, 9rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+
+/* MapLibre specific overrides for light theme */
+.maplibregl-popup-content {
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-ink);
+  border-radius: 0.25rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-brand-soft);
+}
+.maplibregl-popup-close-button {
+  color: var(--color-brand-moss);
+  border-radius: 0.25rem;
+}
+.maplibregl-popup-close-button:hover {
+  background-color: var(--color-brand-soft);
+}

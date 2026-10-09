@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AeroTrace</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <a href="index.html" class="brand-logo">
+                    <i class="bi bi-wind"></i> AeroTrace
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item active"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+                <a href="pages/events.html" class="nav-item"><i class="bi bi-activity"></i> Events</a>
+                <a href="pages/event-investigation.html" class="nav-item"><i class="bi bi-search"></i> Investigation</a>
+                <a href="pages/facilities.html" class="nav-item"><i class="bi bi-buildings"></i> Facilities</a>
+                <a href="pages/sensors.html" class="nav-item"><i class="bi bi-broadcast"></i> Sensors</a>
+                <a href="pages/reports.html" class="nav-item"><i class="bi bi-file-earmark-text"></i> Reports</a>
+                <a href="pages/settings.html" class="nav-item"><i class="bi bi-gear"></i> Settings</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="header-title">Dashboard</h1>
+                </div>
+                <div class="header-actions">
+                    <span class="text-muted" style="font-size: 0.875rem;" id="connectionStatus">
+                        <i class="bi bi-circle-fill" style="color: var(--semantic-success); font-size: 0.6rem;"></i> Connected
+                    </span>
+                    <button class="btn btn-outline" id="refreshBtn"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="app-content" id="mainContent">
+                
+                <!-- Loading State Container -->
+                <div id="dashboardLoading">
+                    <div class="metric-group">
+                        <div class="skeleton-text title"></div>
+                    </div>
+                    <div class="skeleton-block mb-4"></div>
+                </div>
+
+                <!-- Dashboard Content (Hidden initially) -->
+                <div id="dashboardData" style="display: none;">
+                    
+                    <div class="page-subtitle">Platform overview and recent analytical activity</div>
+
+                    <!-- Typographic Metrics -->
+                    <div class="metric-group">
+                        <div class="metric-item">
+                            <span class="metric-value" id="metricSensors">-</span>
+                            <span class="metric-label">Active Sensors</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-value" id="metricEvents">-</span>
+                            <span class="metric-label">Events (24h)</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-value" id="metricFacilities">-</span>
+                            <span class="metric-label">Monitored Facilities</span>
+                        </div>
+                    </div>
+
+                    <!-- Analytical Sections -->
+                    <section class="data-section">
+                        <h2 class="section-title">Recent Events</h2>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Event ID</th>
+                                        <th>Location</th>
+                                        <th>Severity</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentEventsTable">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="eventsEmpty" class="state-message mt-4" style="display: none;">
+                            <i class="bi bi-check-circle"></i>
+                            <div>No recent pollution events detected.</div>
+                        </div>
+                    </section>
+                </div>
+                
+                <!-- Error State -->
+                <div id="dashboardError" class="state-message" style="display: none;">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <div>Unable to load dashboard data. Please check the backend connection.</div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/dev-adapter.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pages/dashboard.js"></script>
+</body>
+</html>
